@@ -10,7 +10,7 @@
     "routes": [
         {
             "src": "/(.*)",
-            "dest": "Ashrafur_Bangla_Math/wsgi.py"
+            "dest": "Ashrafur_bangla_math/wsgi.py"
         }
     ]
 }
