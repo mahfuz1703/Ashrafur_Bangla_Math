@@ -2,16 +2,9 @@
     "version": 2,
     "builds": [
         {
-            "src": "Ashrafur_Bangla_Math/wsgi.py",
+            "src": "Ashrafur_bangla_math/wsgi.py",
             "use": "@vercel/python",
             "config": { "maxLambdaSize": "15mb", "runtime": "python3.9" }
-        },
-        {
-            "src": "build_files.sh",
-            "use": "@vercel/static-build",
-            "config": {
-                "outputDirectory": "dist"
-            }
         }
     ],
     "routes": [
