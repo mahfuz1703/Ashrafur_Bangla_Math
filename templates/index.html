@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ashrafur Math</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;700&display=swap" rel="stylesheet">
+
+
+    <style>
+        body {
+            font-family: 'Noto Sans Bengali', sans-serif;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    
+
+    <!-- MathJax for Rendering Math Equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true,
+                processEnvironments: true
+            },
+            options: {
+                ignoreHtmlClass: "no-mathjax",
+                processHtmlClass: "mathjax-render"
+            },
+            svg: {
+                fontCache: 'global'
+            }
+        };
+    </script>
+    <script type="text/javascript" async 
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+    </script>
+
+    <script type="text/javascript" async
+        src="https://polyfill.io/v3/polyfill.min.js?features=es6">
+    </script>
+
+    <!-- <script>
+        window.onload = function () {
+            if (window.MathJax) {
+                MathJax.typeset();
+            }
+        };
+    </script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            if (window.MathJax) {
+                MathJax.typesetPromise();  // Ensures MathJax re-renders dynamically loaded content
+            }
+        });
+    </script> -->
+</head>
+
+<body class="bg-gray-900 text-white">
+
+    <!-- Navbar -->
+    <nav class="bg-gray-800 p-4 flex justify-between items-center shadow-lg">
+        <h1 class="text-2xl font-bold text-white">
+            <a href="{% url 'show_dataset' %}">Ashrafur Math</a>
+        </h1>
+
+        <div class="flex space-x-10 items-center">
+            <h2 class="text-[14px] font-bold text-white">
+                Dataset <a href="https://huggingface.co/datasets/hamim-87/Ashrafur_bangla_math" class="text-blue-500" target="_blank">Source</a>
+            </h2>
+    
+            <h2 class="text-[14px] font-bold text-white">
+                Developed by <a href="https://mahfuzmia.me" class="text-blue-500" target="_blank">Mahfuz</a>
+            </h2>
+
+            <h2 class="text-[14px] font-bold text-white flex text-center">
+                <a href="https://github.com/mahfuz1703/Ashrafur_Bangla_Math" class="text-blue-500" target="_blank">
+                    <i class="fa fa-github" style="font-size:25px"></i>
+                </a>
+            </h2>
+        </div>
+        
+        <!-- Search Bar -->
+        <!-- <form method="GET" action="" class="relative">
+            <input type="text" name="q" placeholder="Search..."
+                class="px-4 py-2 rounded-lg bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <button type="submit" class="absolute right-3 top-3 text-gray-400">
+                🔍
+            </button>
+        </form> -->
+    </nav>
+
+    <!-- Problems List -->
+     <!-- <div>\[ \frac{s}{r} = \frac{\sqrt{125}}{\sqrt{98\pi}} = \frac{5\sqrt{5}}{\sqrt{98\pi}} \ \]</div> -->
+    <div class="max-w-4xl mx-auto p-6">
+        {% for problem in page_obj %}
+        <div class="bg-gray-800 p-4 mb-4 rounded-lg shadow-lg hover:shadow-xl transition-shadow">
+            {% if problem.problem %}
+            <div class="text-[24px] font-semibold text-[#ffa500]">সমস্যা:</div>
+            {% autoescape off %}
+            <span class="mt-2 text-gray-300 text-lg">{{ problem.problem | safe }}</span>
+            {% endautoescape %}
+    
+            <!-- Solution Toggle Button -->
+             <br>
+            <button onclick="toggleSolution({{ forloop.counter }})"
+                class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition">
+                সমাধান দেখুন
+            </button>
+    
+            <!-- Solution (Initially Hidden) -->
+            <div id="solution-{{ forloop.counter }}" class="hidden mt-4">
+                <div class="text-[24px] font-semibold text-[#ffa500]">সমাধান:</div>
+                {% autoescape off %}
+                <span class="mt-2 text-gray-300 text-lg">{{ problem.solution | safe }}</span>
+                {% endautoescape %}
+            </div>
+            {% endif %}
+        </div>
+        {% empty %}
+        <p class="text-center text-gray-400">No problems found.</p>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    <div class="flex justify-center mt-6 space-x-2">
+        {% if page_obj.has_previous %}
+        <a href="?page=1" class="px-4 py-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition">First</a>
+        <a href="?page={{ page_obj.previous_page_number }}" class="px-4 py-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition">Previous</a>
+        {% endif %}
+
+        <span class="px-4 py-2 bg-gray-600 rounded-lg">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}" class="px-4 py-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition">Next</a>
+        <a href="?page={{ page_obj.paginator.num_pages }}" class="px-4 py-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition">Last</a>
+        {% endif %}
+    </div>
+
+    <br> <br>
+
+
+    <script>
+        function toggleSolution(id) {
+            var solutionDiv = document.getElementById('solution-' + id);
+            if (solutionDiv.classList.contains('hidden')) {
+                solutionDiv.classList.remove('hidden');
+            } else {
+                solutionDiv.classList.add('hidden');
+            }
+        }
+    </script>
+
+</body>
+
+</html>

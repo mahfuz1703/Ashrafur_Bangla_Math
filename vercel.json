@@ -1,0 +1,16 @@
+{
+    "version": 2,
+    "builds": [
+        {
+            "src": "Ashrafur_Bangla_Math/wsgi.py",
+            "use": "@vercel/python",
+            "config": { "maxLambdaSize": "15mb", "runtime": "python3.12" }
+        }
+    ],
+    "routes": [
+        {
+            "src": "/(.*)",
+            "dest": "Ashrafur_Bangla_Math/wsgi.py"
+        }
+    ]
+}
