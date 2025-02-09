@@ -17,7 +17,227 @@
         }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+    <script type="text/javascript" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+    </script>
+
+    <script type="text/javascript" async src="https://polyfill.io/v3/polyfill.min.js?features=es6">
+    </script>
+</head>
+
+<body class="bg-gray-900 text-white">
+
+    <!-- Popup Notification -->
+    <div id="popup-message" class="fixed top-5 left-1/2 transform -translate-x-1/2 sm:w-full w-[300px] max-w-lg p-2 rounded-lg shadow-lg text-white text-center hidden z-50">
+        <p id="message-text"></p>
+    </div>
+
+    <!-- Navbar -->
+    <nav class="bg-gray-800 p-4 lg:px-[100px] flex justify-between items-center shadow-lg">
+        <h1 class="text-2xl font-bold text-white">
+            <a href="{% url 'show_dataset' %}">Ashrafur Math
+                <span class="text-orange-700 text-lg">v2</span>
+            </a>
+        </h1>
+
+        <div class="flex space-x-10 items-center hidden md:block md:flex">
+            <h2 class="text-[14px] font-bold text-white">
+                Dataset <a href="https://huggingface.co/datasets/hamim-87/Ashrafur_bangla_math" class="text-blue-500"
+                    target="_blank">Source</a>
+            </h2>
+
+            <h2 class="text-[14px] font-bold text-white">
+                Developed by <a href="https://mahfuzmia.me" class="text-blue-500" target="_blank">Mahfuz</a>
+            </h2>
+
+            <h2 class="text-[14px] font-bold text-white flex text-center">
+                <a href="https://github.com/mahfuz1703/Ashrafur_Bangla_Math" class="text-blue-500" target="_blank">
+                    <i class="fa fa-github" style="font-size:25px"></i>
+                </a>
+            </h2>
+        </div>
+
+        <div>
+            {% if user.is_authenticated %}
+
+            <div class="flex items-center space-x-6 text-center">
+                <a href="#" onclick="openLeaderboard()">
+                    <img width="34" height="34" src="https://img.icons8.com/nolan/64/leaderboard.png" alt="leaderboard"
+                        title="Leaderboard" />
+                </a>
+
+                <a href="{% url 'logout' %}">
+                    <img width="34" height="34" src="https://img.icons8.com/fluency-systems-filled/50/exit.png"
+                        alt="exit" title="Logout" />
+                </a>
+            </div>
+
+            {% else %}
+            <a href="{% url 'login' %}"
+                class="text-[14px] font-bold text-white bg-blue-700 rounded-full px-5 py-2.5 text-center me-2 mb-2">
+                Login
+            </a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <!-- Searching by category -->
+    <form method="GET" action="" class="max-w-4xl mx-auto mt-4">
+        <div class="flex justify-center space-x-4 items-center px-7">
+            <select name="category" class="w-full p-2 rounded bg-gray-700 text-white p-3 px-5">
+                <option value="">All Categories</option>
+                {% for category in categories %}
+                <option value="{{ category.name }}" {% if category.name == selected_category %}selected{% endif %}>
+                    {{ category.name }}
+                </option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="p-3 bg-blue-500 text-white rounded">Search</button>
+        </div>
+    </form>
+    <!-- Problems List -->
+    <div class="max-w-4xl mx-auto p-6">
+        <div class="my-3 flex justify-start space-x-2">
+            <label for="toggle-check">Show Unread Only:</label>
+            <input type="checkbox" id="toggle-check" name="toggle-check"
+                class="toggle-checkbox toggle-checkbox peer w-5 h-5 border-2 border-gray-300 rounded-lg transition-all">
+        </div>
+        {% for problem in page_obj %}
+        <div
+            class="bg-gray-800 p-4 mb-4 rounded-lg shadow-lg hover:shadow-xl transition-shadow problem-item {% if problem.is_read %}checked{% endif %}">
+            {% if problem.problem %}
+
+            <div class="flex justify-between items-center">
+
+                {% if user.is_authenticated %}
+                <form method="post" action="{% url 'toggle_status' problem.problem_id %}"
+                    class="flex justify-start gap-2">
+                    {% csrf_token %}
+                    <input type="hidden" name="is_read" value="false">
+                    <input type="checkbox" name="is_read" value="true" {% if problem.is_read %}checked{% endif %}
+                        onchange="saveScrollAndSubmit(this.form)"
+                        class="toggle-checkbox peer w-5 h-5 border-2 border-gray-300 rounded-lg transition-all">
+                    <label>Mark as Read</label>
+                </form>
+                {% else %}
+                <p class="text-gray-400">Log in to mark as read.</p>
+                {% endif %}
+
+                <div>
+                    <!-- Problem Details -->
+                    {% if user.is_authenticated %}
+                    <span class="cursor-pointer text-white text-xl" onclick="openPopup({{ problem.problem_id }})">
+                        📢
+                    </span>
+                    {% else %}
+                    <a href="{% url 'login' %}">
+                        <span class="cursor-pointer text-white text-xl">
+                            📢
+                        </span>
+                    </a>
+                    {% endif %}
+
+                    <!-- Popup Modal -->
+                    <div id="popup-modal-{{ problem.problem_id }}"
+                        class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
+                        <div class="p-6 rounded shadow-lg w-80 bg-gray-800">
+                            <h2 class="text-xl font-bold mb-4">
+                                এই সমস্যাটি পড়ার পর আপনি এটিকে যেই ক্যাটেগরির মধ্যে রাখতে চান সেই ক্যাটাগরিটি সাবমিট করুন। ধন্যবাদ।
+                            </h2>
+
+                            <form method="POST" action="{% url 'submit_category' problem.problem_id %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="problem_id" value="{{ problem.problem_id }}">
+                                <select name="category"
+                                    class="p-2 border rounded w-full mt-2 bg-gray-100 text-gray-800 focus:outline-none">
+                                    <option value="">Select Category</option>
+                                    {% for category in categories %}
+                                    <option value="{{ category.id }}">{{ category.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button type="submit"
+                                    class="mt-4 p-2 bg-green-500 text-white rounded w-full">Submit</button>
+                            </form>
+
+                            <button onclick="closePopup({{ problem.problem_id }})"
+                                class="mt-2 p-2 bg-red-500 text-white rounded w-full">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Problem Statement -->
+            <div class="text-[24px] font-semibold text-[#ffa500]">সমস্যা:</div>
+            {% autoescape off %}
+            <span class="mt-2 text-gray-300 text-lg">{{ problem.problem | safe }}</span>
+            {% endautoescape %}
+
+            <!-- Solution Toggle Button -->
+            <br>
+            <button onclick="toggleSolution({{ forloop.counter }})"
+                class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition">
+                সমাধান দেখুন
+            </button>
+
+            <!-- Solution (Initially Hidden) -->
+            <div id="solution-{{ forloop.counter }}" class="hidden mt-4">
+                <div class="text-[24px] font-semibold text-[#ffa500]">সমাধান:</div>
+                {% autoescape off %}
+                <span class="mt-2 text-gray-300 text-lg">{{ problem.solution | safe }}</span>
+                {% endautoescape %}
+            </div>
+            {% endif %}
+        </div>
+        {% empty %}
+        <p class="text-center text-gray-400">No problems found.</p>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    <div class="flex justify-center mt-6 space-x-2">
+        {% if page_obj.has_previous %}
+            <a href="?page=1{% if selected_category %}&category={{ selected_category }}{% endif %}" class="sm:px-4 sm:py-2 px-2 py-1 bg-gray-700 rounded-lg text-[15px] hover:bg-gray-600 transition">First</a>
+            <a href="?page={{ page_obj.previous_page_number }}{% if selected_category %}&category={{ selected_category }}{% endif %}" class="sm:px-4 sm:py-2 px-2 py-1 bg-gray-700 rounded-lg text-[15px] hover:bg-gray-600 transition">Previous</a>
+        {% endif %}
     
+        <span class="sm:px-4 sm:py-2 px-2 py-1 bg-gray-600 rounded-lg text-[14px]">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}{% if selected_category %}&category={{ selected_category }}{% endif %}" class="sm:px-4 sm:py-2 px-2 py-1 bg-gray-700 rounded-lg text-[15px] hover:bg-gray-600 transition">Next</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}{% if selected_category %}&category={{ selected_category }}{% endif %}" class="sm:px-4 sm:py-2 px-2 py-1 bg-gray-700 rounded-lg text-[15px] hover:bg-gray-600 transition">Last</a>
+        {% endif %}
+    </div>
+
+
+
+    <br> <br>
+
+
+    <!-- Leaderboard Popup Modal -->
+    <div id="leaderboard-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
+        <div class="bg-gray-800 p-6 rounded-lg shadow-lg w-[330px] sm:w-96">
+            <h2 class="text-xl font-bold text-white mb-4">Leaderboard</h2>
+
+            <table class="w-full text-white">
+                <thead>
+                    <tr class="border-b">
+                        <th class="p-2">Rank</th>
+                        <th class="p-2">User</th>
+                        <th class="p-2">Points</th>
+                    </tr>
+                </thead>
+                <tbody id="leaderboard-content">
+                    <tr>
+                        <td colspan="3" class="text-center p-2">Loading...</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <button onclick="closeLeaderboard()" class="mt-4 p-2 bg-red-500 text-white rounded w-full">Close</button>
+        </div>
+    </div>
+
+
 
     <!-- MathJax for Rendering Math Equations -->
     <script>
@@ -37,115 +257,8 @@
             }
         };
     </script>
-    <script type="text/javascript" async 
-        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
-    </script>
 
-    <script type="text/javascript" async
-        src="https://polyfill.io/v3/polyfill.min.js?features=es6">
-    </script>
-
-    <!-- <script>
-        window.onload = function () {
-            if (window.MathJax) {
-                MathJax.typeset();
-            }
-        };
-    </script>
-
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            if (window.MathJax) {
-                MathJax.typesetPromise();  // Ensures MathJax re-renders dynamically loaded content
-            }
-        });
-    </script> -->
-</head>
-
-<body class="bg-gray-900 text-white">
-
-    <!-- Navbar -->
-    <nav class="bg-gray-800 p-4 flex justify-between items-center shadow-lg">
-        <h1 class="text-2xl font-bold text-white">
-            <a href="{% url 'show_dataset' %}">Ashrafur Math</a>
-        </h1>
-
-        <div class="flex space-x-10 items-center">
-            <h2 class="text-[14px] font-bold text-white">
-                Dataset <a href="https://huggingface.co/datasets/hamim-87/Ashrafur_bangla_math" class="text-blue-500" target="_blank">Source</a>
-            </h2>
-    
-            <h2 class="text-[14px] font-bold text-white">
-                Developed by <a href="https://mahfuzmia.me" class="text-blue-500" target="_blank">Mahfuz</a>
-            </h2>
-
-            <h2 class="text-[14px] font-bold text-white flex text-center">
-                <a href="https://github.com/mahfuz1703/Ashrafur_Bangla_Math" class="text-blue-500" target="_blank">
-                    <i class="fa fa-github" style="font-size:25px"></i>
-                </a>
-            </h2>
-        </div>
-        
-        <!-- Search Bar -->
-        <!-- <form method="GET" action="" class="relative">
-            <input type="text" name="q" placeholder="Search..."
-                class="px-4 py-2 rounded-lg bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <button type="submit" class="absolute right-3 top-3 text-gray-400">
-                🔍
-            </button>
-        </form> -->
-    </nav>
-
-    <!-- Problems List -->
-     <!-- <div>\[ \frac{s}{r} = \frac{\sqrt{125}}{\sqrt{98\pi}} = \frac{5\sqrt{5}}{\sqrt{98\pi}} \ \]</div> -->
-    <div class="max-w-4xl mx-auto p-6">
-        {% for problem in page_obj %}
-        <div class="bg-gray-800 p-4 mb-4 rounded-lg shadow-lg hover:shadow-xl transition-shadow">
-            {% if problem.problem %}
-            <div class="text-[24px] font-semibold text-[#ffa500]">সমস্যা:</div>
-            {% autoescape off %}
-            <span class="mt-2 text-gray-300 text-lg">{{ problem.problem | safe }}</span>
-            {% endautoescape %}
-    
-            <!-- Solution Toggle Button -->
-             <br>
-            <button onclick="toggleSolution({{ forloop.counter }})"
-                class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition">
-                সমাধান দেখুন
-            </button>
-    
-            <!-- Solution (Initially Hidden) -->
-            <div id="solution-{{ forloop.counter }}" class="hidden mt-4">
-                <div class="text-[24px] font-semibold text-[#ffa500]">সমাধান:</div>
-                {% autoescape off %}
-                <span class="mt-2 text-gray-300 text-lg">{{ problem.solution | safe }}</span>
-                {% endautoescape %}
-            </div>
-            {% endif %}
-        </div>
-        {% empty %}
-        <p class="text-center text-gray-400">No problems found.</p>
-        {% endfor %}
-    </div>
-
-    <!-- Pagination -->
-    <div class="flex justify-center mt-6 space-x-2">
-        {% if page_obj.has_previous %}
-        <a href="?page=1" class="px-4 py-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition">First</a>
-        <a href="?page={{ page_obj.previous_page_number }}" class="px-4 py-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition">Previous</a>
-        {% endif %}
-
-        <span class="px-4 py-2 bg-gray-600 rounded-lg">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
-
-        {% if page_obj.has_next %}
-        <a href="?page={{ page_obj.next_page_number }}" class="px-4 py-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition">Next</a>
-        <a href="?page={{ page_obj.paginator.num_pages }}" class="px-4 py-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition">Last</a>
-        {% endif %}
-    </div>
-
-    <br> <br>
-
-
+    <!-- Toggle solution of problems -->
     <script>
         function toggleSolution(id) {
             var solutionDiv = document.getElementById('solution-' + id);
@@ -157,6 +270,220 @@
         }
     </script>
 
+    <!-- Popup Modal Script for category submit -->
+    <script>
+        function openPopup(problemId) {
+            document.getElementById("popup-modal-" + problemId).classList.remove("hidden");
+        }
+
+        function closePopup(problemId) {
+            document.getElementById("popup-modal-" + problemId).classList.add("hidden");
+        }
+
+        // AJAX Submission for Category Form
+        document.getElementById("category-form").addEventListener("submit", function (event) {
+            event.preventDefault();
+
+            const problemId = document.getElementById("problem-id").value;
+            const categoryId = document.getElementById("category-select").value; // Get the category ID
+            const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
+
+
+            fetch(`/submit_category/${problemId}/`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": csrfToken
+                },
+                body: JSON.stringify({ category: categoryId })
+            }).then(response => {
+                if (response.ok) {
+                    alert("Category Submitted!");
+                    closePopup();
+                } else {
+                    alert("Error submitting category.");
+                    return response.json().then(data => {
+                        console.log("Error response:", data);  // Log the error response
+                    });
+                }
+            }).catch(err => {
+                console.log("Error in fetch:", err);
+            });
+        });
+    </script>
+
+
+
+    <!-- script for leaderboard -->
+    <script>
+        function openLeaderboard() {
+            document.getElementById('leaderboard-modal').classList.remove('hidden');
+
+            // Fetch leaderboard data via AJAX
+            fetch("{% url 'get_leaderboard' %}")
+                .then(response => response.json())
+                .then(data => {
+                    let leaderboardContent = document.getElementById('leaderboard-content');
+                    leaderboardContent.innerHTML = "";  // Clear previous data
+
+                    if (data.leaderboard.length > 0) {
+                        data.leaderboard.forEach((user, index) => {
+                            let row = `
+                        <tr class="border-b">
+                            <td class="p-2 text-center">${index + 1}</td>
+                            <td class="p-2 text-center">${user.user__username}</td>
+                            <td class="p-2 text-center">${user.points}</td>
+                        </tr>`;
+                            leaderboardContent.innerHTML += row;
+                        });
+                    } else {
+                        leaderboardContent.innerHTML = `<tr><td colspan="3" class="text-center p-2">No data available</td></tr>`;
+                    }
+                });
+        }
+
+        function closeLeaderboard() {
+            document.getElementById('leaderboard-modal').classList.add('hidden');
+        }
+    </script>
+
+
+
+    <!-- Save and Restore Scroll Position -->
+    <script>
+        function saveScrollPosition() {
+            localStorage.setItem("scrollPosition", window.scrollY);
+        }
+
+        function saveScrollAndSubmit(form) {
+            saveScrollPosition();  // Save scroll position first
+            form.submit();  // Then submit the form
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            let scrollPosition = localStorage.getItem("scrollPosition");
+            if (scrollPosition) {
+                window.scrollTo(0, scrollPosition);
+                localStorage.removeItem("scrollPosition");  // Remove after restoring
+            }
+        });
+
+        // Attach event listener to all forms
+        document.querySelectorAll("form").forEach(form => {
+            form.addEventListener("submit", saveScrollPosition);
+        });
+    </script>
+
+
+    <!-- JavaScript for Popup Message -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            let popupMessage = document.getElementById("popup-message");
+            let messageText = document.getElementById("message-text");
+    
+            function showPopupMessage(message, bgColor = "bg-blue-500", duration = 3000) {
+                messageText.textContent = message;
+                popupMessage.classList.remove("hidden", "bg-blue-500", "bg-green-500", "bg-red-500", "bg-yellow-500");
+                popupMessage.classList.add(bgColor);
+    
+                // Show popup
+                popupMessage.style.display = "block";
+    
+                // Hide after timeout
+                setTimeout(function () {
+                    popupMessage.style.display = "none";
+                }, duration);
+            }
+    
+            // Loop through Django messages and show popups dynamically
+            {% if messages %}
+                {% for message in messages %}
+                    let bgColor = "bg-blue-500"; // Default color
+                    {% if message.tags == "success" %}
+                        bgColor = "bg-green-500";
+                    {% elif message.tags == "error" %}
+                        bgColor = "bg-red-500";
+                    {% elif message.tags == "warning" %}
+                        bgColor = "bg-yellow-500";
+                    {% endif %}
+    
+                    showPopupMessage("{{ message|escapejs }}", bgColor, 3000);
+                {% endfor %}
+            {% endif %}
+        });
+    </script>
+
+
+
+    <!-- Script for toggle problem status -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const toggleCheckbox = document.getElementById("toggle-check");
+            const problemItems = document.querySelectorAll(".problem-item");
+
+            // Check if toggle state is saved in localStorage
+            const toggleState = localStorage.getItem("toggleState");
+
+            if (toggleState === "true") {
+                // If toggle was previously checked, hide checked problems
+                toggleCheckbox.checked = true;
+                problemItems.forEach(function (item) {
+                    if (item.classList.contains("checked")) {
+                        item.style.display = "none";  // Hide checked problems
+                    }
+                });
+            } else {
+                // If toggle was previously unchecked or no state is saved, show all problems
+                toggleCheckbox.checked = false;
+                problemItems.forEach(function (item) {
+                    item.style.display = "block";  // Show all problems
+                });
+            }
+
+            // Save the state of the toggle to localStorage
+            toggleCheckbox.addEventListener("change", function () {
+                // Save the toggle state
+                localStorage.setItem("toggleState", toggleCheckbox.checked ? "true" : "false");
+
+                // Show/hide problems based on the toggle state
+                if (toggleCheckbox.checked) {
+                    problemItems.forEach(function (item) {
+                        if (item.classList.contains("checked")) {
+                            item.style.display = "none";  // Hide checked problems
+                        } else {
+                            item.style.display = "block"; // Show unchecked problems
+                        }
+                    });
+                } else {
+                    problemItems.forEach(function (item) {
+                        item.style.display = "block"; // Show all problems
+                    });
+                }
+            });
+        });
+    </script>
+
+
+
+    <footer class="bg-gray-800 p-4 lg:px-[100px] items-center shadow-lg md:hidden">
+
+        <div class="flex space-x-5 justify-center items-center">
+            <h2 class="text-[14px] font-bold text-white">
+                Dataset <a href="https://huggingface.co/datasets/hamim-87/Ashrafur_bangla_math" class="text-blue-500"
+                    target="_blank">Source</a>
+            </h2>
+
+            <h2 class="text-[14px] font-bold text-white">
+                Developed by <a href="https://mahfuzmia.me" class="text-blue-500" target="_blank">Mahfuz</a>
+            </h2>
+
+            <h2 class="text-[14px] font-bold text-white flex text-center">
+                <a href="https://github.com/mahfuz1703/Ashrafur_Bangla_Math" class="text-blue-500" target="_blank">
+                    <i class="fa fa-github" style="font-size:25px"></i>
+                </a>
+            </h2>
+        </div>
+    </footer>
 </body>
 
 </html>
