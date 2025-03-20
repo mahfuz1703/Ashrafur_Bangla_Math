@@ -14,3 +14,5 @@ from django.core.wsgi import get_wsgi_application
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Ashrafur_bangla_math.settings')
 
 application = get_wsgi_application()
+app = application
+
